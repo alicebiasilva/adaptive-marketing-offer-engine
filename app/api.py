@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from src.inference import predict
+from src.inference import predict, update
 
 
 # ============================================================
@@ -19,12 +19,13 @@ app = FastAPI(
 
 
 # ============================================================
-# SCHEMA DE ENTRADA
+# SCHEMA DE ENTRADA DO CLIENTE
 # ============================================================
 
 class ClientData(BaseModel):
 
     age: int
+
     job: str
     marital: str
     education: str
@@ -55,6 +56,19 @@ class ClientData(BaseModel):
 
 
 # ============================================================
+# SCHEMA DO UPDATE
+# ============================================================
+
+class UpdateRequest(BaseModel):
+
+    client: ClientData
+
+    action: str
+
+    reward: int
+
+
+# ============================================================
 # HEALTH CHECK
 # ============================================================
 
@@ -66,6 +80,44 @@ def health():
 
 
 # ============================================================
+# FUNÇÃO AUXILIAR
+# ============================================================
+
+def prepare_client_data(
+    client: ClientData
+) -> dict:
+    """
+    Converte o objeto Pydantic para dict e ajusta
+    os nomes das colunas para os nomes utilizados
+    no dataset e no encoder.
+    """
+
+    client_data = client.model_dump()
+
+    # --------------------------------------------------------
+    # Variáveis com nomes diferentes no JSON/API
+    # --------------------------------------------------------
+
+    client_data["emp.var.rate"] = (
+        client_data.pop("emp_var_rate")
+    )
+
+    client_data["cons.price.idx"] = (
+        client_data.pop("cons_price_idx")
+    )
+
+    client_data["cons.conf.idx"] = (
+        client_data.pop("cons_conf_idx")
+    )
+
+    client_data["nr.employed"] = (
+        client_data.pop("nr_employed")
+    )
+
+    return client_data
+
+
+# ============================================================
 # PREDICTION
 # ============================================================
 
@@ -73,33 +125,19 @@ def health():
 def predict_channel(
     client: ClientData
 ):
+    """
+    Recebe os dados de um cliente e utiliza
+    Thompson Sampling para escolher o canal.
+    """
 
     try:
 
         # ----------------------------------------------------
-        # Converter Pydantic para dict
+        # Preparar dados
         # ----------------------------------------------------
 
-        client_data = client.model_dump()
-
-        # ----------------------------------------------------
-        # Ajustar nomes para os nomes utilizados no dataset
-        # ----------------------------------------------------
-
-        client_data["emp.var.rate"] = (
-            client_data.pop("emp_var_rate")
-        )
-
-        client_data["cons.price.idx"] = (
-            client_data.pop("cons_price_idx")
-        )
-
-        client_data["cons.conf.idx"] = (
-            client_data.pop("cons_conf_idx")
-        )
-
-        client_data["nr.employed"] = (
-            client_data.pop("nr_employed")
+        client_data = prepare_client_data(
+            client
         )
 
         # ----------------------------------------------------
@@ -114,6 +152,72 @@ def predict_channel(
             "action": result["action"],
             "score": result["score"],
         }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# ============================================================
+# UPDATE / APRENDIZADO ONLINE
+# ============================================================
+
+@app.post("/update")
+def update_model(
+    request: UpdateRequest
+):
+    """
+    Atualiza o Thompson Sampling após observar
+    o resultado da interação com o cliente.
+
+    reward:
+        0 = não converteu
+        1 = converteu
+    """
+
+    try:
+
+        # ----------------------------------------------------
+        # Validar reward
+        # ----------------------------------------------------
+
+        if request.reward not in (0, 1):
+
+            raise HTTPException(
+                status_code=400,
+                detail="reward deve ser 0 ou 1."
+            )
+
+        # ----------------------------------------------------
+        # Preparar dados do cliente
+        # ----------------------------------------------------
+
+        client_data = prepare_client_data(
+            request.client
+        )
+
+        # ----------------------------------------------------
+        # Atualizar modelo
+        # ----------------------------------------------------
+
+        result = update(
+            client=client_data,
+            action=request.action,
+            reward=request.reward
+        )
+
+        return {
+            "status": result["status"],
+            "action": result["action"],
+            "reward": result["reward"],
+            "model_path": result["model_path"],
+        }
+
+    except HTTPException:
+        raise
 
     except Exception as e:
 

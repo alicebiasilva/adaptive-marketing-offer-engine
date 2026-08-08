@@ -9,8 +9,13 @@ import pandas as pd
 # CONFIGURAÇÕES
 # ============================================================
 
-MODEL_DIR = Path("models")
+# Raiz do projeto
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
+# Diretório dos modelos
+MODEL_DIR = PROJECT_ROOT / "models"
+
+# Artefatos
 BANDIT_PATH = MODEL_DIR / "bandit.pkl"
 ENCODER_PATH = MODEL_DIR / "encoder.pkl"
 
@@ -73,6 +78,26 @@ def load_models():
 
 
 # ============================================================
+# SALVAMENTO DO BANDIT
+# ============================================================
+
+def save_bandit(bandit) -> None:
+    """
+    Salva o estado atualizado do Thompson Sampling.
+    """
+
+    MODEL_DIR.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    joblib.dump(
+        bandit,
+        BANDIT_PATH
+    )
+
+
+# ============================================================
 # PREPARAÇÃO DO CONTEXTO
 # ============================================================
 
@@ -105,7 +130,7 @@ def prepare_context(
         CONTEXT_FEATURES
     ]
 
-    # Mesmo encoder utilizado no treinamento
+    # Aplica o mesmo encoder utilizado no treinamento
     encoded = encoder.transform(
         df_client
     )
@@ -127,7 +152,7 @@ def prepare_context(
 
 
 # ============================================================
-# INFERÊNCIA
+# PREDIÇÃO / ESCOLHA DA AÇÃO
 # ============================================================
 
 def predict(
@@ -155,6 +180,79 @@ def predict(
     return {
         "action": action,
         "score": float(score),
+    }
+
+
+# ============================================================
+# UPDATE / APRENDIZADO ONLINE
+# ============================================================
+
+def update(
+    client: dict,
+    action: str,
+    reward: float
+) -> dict:
+    """
+    Atualiza o Thompson Sampling após observar
+    o resultado da ação escolhida.
+
+    Parameters
+    ----------
+    client:
+        Dados do cliente utilizados para tomar a decisão.
+
+    action:
+        Ação/canal que foi escolhido pelo Bandit.
+
+    reward:
+        Resultado observado.
+
+        0 = não converteu
+        1 = converteu
+    """
+
+    # Validação do reward
+    if reward not in (0, 1):
+        raise ValueError(
+            "reward deve ser 0 (não converteu) "
+            "ou 1 (converteu)."
+        )
+
+    # Carrega os artefatos atuais
+    bandit, encoder = load_models()
+
+    # Prepara o mesmo contexto utilizado na predição
+    context = prepare_context(
+        client,
+        encoder
+    )
+
+    context_vector = context[0]
+
+    # Verifica se a ação existe
+    if action not in bandit.arms:
+        raise ValueError(
+            f"Ação desconhecida: {action}. "
+            f"Ações disponíveis: {bandit.arms}"
+        )
+
+    # Atualiza o Thompson Sampling
+    bandit.update(
+        context=context_vector,
+        arm=action,
+        reward=reward
+    )
+
+    # Salva o modelo atualizado
+    save_bandit(
+        bandit
+    )
+
+    return {
+        "status": "updated",
+        "action": action,
+        "reward": reward,
+        "model_path": str(BANDIT_PATH),
     }
 
 
@@ -190,11 +288,59 @@ if __name__ == "__main__":
         "engagement_score": 1,
     }
 
-    result = predict(client)
+    # ========================================================
+    # PREDIÇÃO
+    # ========================================================
 
     print("=" * 60)
-    print("INFERÊNCIA")
+    print("PREDIÇÃO")
     print("=" * 60)
 
-    print(f"Ação escolhida : {result['action']}")
-    print(f"Score          : {result['score']:.6f}")
+    result = predict(
+        client
+    )
+
+    print(
+        f"Ação escolhida : {result['action']}"
+    )
+
+    print(
+        f"Score           : {result['score']:.6f}"
+    )
+
+    # ========================================================
+    # SIMULAÇÃO DE REWARD
+    # ========================================================
+
+    # Simulação:
+    # 0 = não converteu
+    # 1 = converteu
+
+    reward = 1
+
+    print()
+    print("=" * 60)
+    print("UPDATE")
+    print("=" * 60)
+
+    update_result = update(
+        client=client,
+        action=result["action"],
+        reward=reward
+    )
+
+    print(
+        f"Status: {update_result['status']}"
+    )
+
+    print(
+        f"Ação: {update_result['action']}"
+    )
+
+    print(
+        f"Reward: {update_result['reward']}"
+    )
+
+    print(
+        f"Modelo salvo em: {update_result['model_path']}"
+    )

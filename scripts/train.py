@@ -11,16 +11,13 @@ from sklearn.preprocessing import OneHotEncoder
 
 from src.bandit import ContextualThompsonSampling
 
-
-print("=" * 70)
-print("PROCESSO INICIADO")
-print("=" * 70)
-
-
 # ============================================================
 # CONFIGURAÇÕES
 # ============================================================
 
+print("=" * 70)
+print("PROCESSO INICIADO")
+print("=" * 70)
 print("Configurando ambiente...")
 
 RANDOM_STATE = 42
@@ -41,8 +38,11 @@ ENCODER_PATH = MODEL_DIR / "encoder.pkl"
 # MLFLOW
 # ============================================================
 
+# Diretório raíz do projeto 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 # O banco SQLite do MLflow ficará separado dos modelos
-MLFLOW_DIR = Path("mlflow")
+MLFLOW_DIR = PROJECT_ROOT / "mlflow"
 
 MLFLOW_DIR.mkdir(
     parents=True,

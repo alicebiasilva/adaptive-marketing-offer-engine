@@ -1,0 +1,57 @@
+# PREDICT
+{
+  "age": 40,
+  "job": "admin.",
+  "marital": "married",
+  "education": "university.degree",
+  "default": "no",
+  "housing": "yes",
+  "loan": "no",
+  "month": "may",
+  "day_of_week": "mon",
+  "campaign": 1,
+  "pdays": 999,
+  "previous": 0,
+  "poutcome": "nonexistent",
+  "emp_var_rate": 1.1,
+  "cons_price_idx": 93.994,
+  "cons_conf_idx": -36.4,
+  "euribor3m": 4.857,
+  "nr_employed": 5191.0,
+  "previous_contact": 0,
+  "previous_success": 0,
+  "age_group": "adult",
+  "financial_risk": 0,
+  "engagement_score": 1
+}
+
+# UPDATE
+{
+  "client": {
+    "age": 40,
+    "job": "admin.",
+    "marital": "married",
+    "education": "university.degree",
+    "default": "no",
+    "housing": "yes",
+    "loan": "no",
+    "month": "may",
+    "day_of_week": "mon",
+    "campaign": 1,
+    "pdays": 999,
+    "previous": 0,
+    "poutcome": "nonexistent",
+    "emp_var_rate": 1.1,
+    "cons_price_idx": 93.994,
+    "cons_conf_idx": -36.4,
+    "euribor3m": 4.857,
+    "nr_employed": 5191.0,
+    "previous_contact": 0,
+    "previous_success": 0,
+    "age_group": "adult",
+    "financial_risk": 0,
+    "engagement_score": 1
+  },
+  "action": "cellular",
+  "reward": 1
+}
