@@ -467,7 +467,7 @@ data/processed/
 ## 14.1. Clonar o repositório
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
+git clone <https://github.com/alicebiasilva/adaptive-marketing-offer-engine.git>
 cd tech_challenge_5
 ```
 

@@ -2,7 +2,6 @@ from pathlib import Path
 
 import joblib
 import mlflow
-import mlflow.sklearn
 import numpy as np
 import pandas as pd
 
@@ -31,21 +30,33 @@ DATA_PATH = Path(
     "data/processed/bank_marketing_processed.csv"
 )
 
+# Diretório onde os modelos usados pela aplicação serão salvos
 MODEL_DIR = Path("models")
 
 BANDIT_PATH = MODEL_DIR / "bandit.pkl"
 ENCODER_PATH = MODEL_DIR / "encoder.pkl"
 
+
 # ============================================================
 # MLFLOW
 # ============================================================
 
-MLFLOW_DIR = Path("mlruns")
+# O banco SQLite do MLflow ficará separado dos modelos
+MLFLOW_DIR = Path("mlflow")
 
-mlflow.set_tracking_uri(
-    f"file:{MLFLOW_DIR.resolve()}"
+MLFLOW_DIR.mkdir(
+    parents=True,
+    exist_ok=True
 )
 
+MLFLOW_DB = MLFLOW_DIR / "mlflow.db"
+
+# Tracking backend usando SQLite
+mlflow.set_tracking_uri(
+    f"sqlite:///{MLFLOW_DB.resolve()}"
+)
+
+# Experimento
 mlflow.set_experiment(
     "contextual_thompson_sampling"
 )
@@ -88,26 +99,38 @@ CONTEXT_FEATURES = [
 
 with mlflow.start_run() as run:
 
-    print(f"\nMLflow Run ID: {run.info.run_id}")
+    print(
+        f"\nMLflow Run ID: {run.info.run_id}"
+    )
 
     # ========================================================
     # 1. LEITURA DOS DADOS
     # ========================================================
 
-    print("Carregando dados...")
+    print("\nCarregando dados...")
+
+    if not DATA_PATH.exists():
+        raise FileNotFoundError(
+            f"Dataset não encontrado: {DATA_PATH}"
+        )
 
     df = pd.read_csv(DATA_PATH)
 
-    print(f"Dataset: {df.shape}")
+    print(
+        f"Dataset: {df.shape}"
+    )
 
 
     # ========================================================
     # 2. VALIDAÇÃO DAS COLUNAS
     # ========================================================
 
-    print("Validando entradas...")
+    print("\nValidando entradas...")
 
-    required_columns = CONTEXT_FEATURES + ["contact", "y"]
+    required_columns = (
+        CONTEXT_FEATURES
+        + ["contact", "y"]
+    )
 
     missing_columns = [
         col
@@ -121,6 +144,8 @@ with mlflow.start_run() as run:
             f"{missing_columns}"
         )
 
+    print("Todas as colunas necessárias estão presentes.")
+
 
     print("\n")
     print("=" * 70)
@@ -132,11 +157,17 @@ with mlflow.start_run() as run:
     # 3. SEPARAÇÃO
     # ========================================================
 
-    X = df[CONTEXT_FEATURES].copy()
+    X = df[
+        CONTEXT_FEATURES
+    ].copy()
 
-    actions = df["contact"].copy()
+    actions = df[
+        "contact"
+    ].copy()
 
-    rewards = df["y"].copy()
+    rewards = df[
+        "y"
+    ].copy()
 
 
     # ========================================================
@@ -152,9 +183,12 @@ with mlflow.start_run() as run:
             "não": 0,
         }
 
-        rewards = rewards.map(reward_mapping)
+        rewards = rewards.map(
+            reward_mapping
+        )
 
     if rewards.isna().any():
+
         raise ValueError(
             "Existem valores inválidos em y."
         )
@@ -166,7 +200,9 @@ with mlflow.start_run() as run:
     # 5. TRAIN / TEST
     # ========================================================
 
-    indices = np.arange(len(df))
+    indices = np.arange(
+        len(df)
+    )
 
     (
         train_idx,
@@ -178,8 +214,15 @@ with mlflow.start_run() as run:
         stratify=rewards,
     )
 
-    X_train = X.iloc[train_idx].copy()
-    X_test = X.iloc[test_idx].copy()
+    X_train = (
+        X.iloc[train_idx]
+        .copy()
+    )
+
+    X_test = (
+        X.iloc[test_idx]
+        .copy()
+    )
 
     actions_train = (
         actions.iloc[train_idx]
@@ -201,15 +244,33 @@ with mlflow.start_run() as run:
         .reset_index(drop=True)
     )
 
+
     print("\nTreino:")
-    print(f"X: {X_train.shape}")
-    print(f"Ações: {actions_train.shape}")
-    print(f"Rewards: {rewards_train.shape}")
+    print(
+        f"X: {X_train.shape}"
+    )
+
+    print(
+        f"Ações: {actions_train.shape}"
+    )
+
+    print(
+        f"Rewards: {rewards_train.shape}"
+    )
+
 
     print("\nTeste:")
-    print(f"X: {X_test.shape}")
-    print(f"Ações: {actions_test.shape}")
-    print(f"Rewards: {rewards_test.shape}")
+    print(
+        f"X: {X_test.shape}"
+    )
+
+    print(
+        f"Ações: {actions_test.shape}"
+    )
+
+    print(
+        f"Rewards: {rewards_test.shape}"
+    )
 
 
     # ========================================================
@@ -232,10 +293,14 @@ with mlflow.start_run() as run:
     ]
 
     print("\nFeatures categóricas:")
-    print(categorical_features)
+    print(
+        categorical_features
+    )
 
     print("\nFeatures numéricas:")
-    print(numerical_features)
+    print(
+        numerical_features
+    )
 
 
     # ========================================================
@@ -260,12 +325,16 @@ with mlflow.start_run() as run:
         ]
     )
 
-    X_train_encoded = encoder.fit_transform(
-        X_train
+    X_train_encoded = (
+        encoder.fit_transform(
+            X_train
+        )
     )
 
-    X_test_encoded = encoder.transform(
-        X_test
+    X_test_encoded = (
+        encoder.transform(
+            X_test
+        )
     )
 
     X_train_encoded = np.asarray(
@@ -285,19 +354,24 @@ with mlflow.start_run() as run:
 
     X_train_context = np.column_stack(
         [
-            np.ones(len(X_train_encoded)),
+            np.ones(
+                len(X_train_encoded)
+            ),
             X_train_encoded,
         ]
     )
 
     X_test_context = np.column_stack(
         [
-            np.ones(len(X_test_encoded)),
+            np.ones(
+                len(X_test_encoded)
+            ),
             X_test_encoded,
         ]
     )
 
     print("\nContexto:")
+
     print(
         f"Treino: {X_train_context.shape}"
     )
@@ -340,7 +414,9 @@ with mlflow.start_run() as run:
         rewards=rewards_train.to_numpy(),
     )
 
-    print("Treinamento concluído.")
+    print(
+        "Treinamento concluído."
+    )
 
 
     # ========================================================
@@ -366,13 +442,20 @@ with mlflow.start_run() as run:
     # 12. MÉTRICAS DO TREINAMENTO
     # ========================================================
 
-    train_conversion_rate = rewards_train.mean()
-    test_conversion_rate = rewards_test.mean()
+    train_conversion_rate = (
+        rewards_train.mean()
+    )
+
+    test_conversion_rate = (
+        rewards_test.mean()
+    )
 
     print("\nTaxa de conversão:")
+
     print(
         f"Treino: {train_conversion_rate:.6f}"
     )
+
     print(
         f"Teste : {test_conversion_rate:.6f}"
     )
@@ -449,14 +532,13 @@ with mlflow.start_run() as run:
 
     mlflow.log_metric(
         "train_conversion_rate",
-        train_conversion_rate
+        float(train_conversion_rate)
     )
 
     mlflow.log_metric(
         "test_conversion_rate",
-        test_conversion_rate
+        float(test_conversion_rate)
     )
-
 
     for arm in arms:
 
@@ -464,7 +546,9 @@ with mlflow.start_run() as run:
 
         mlflow.log_metric(
             f"{arm}_theta_norm",
-            float(np.linalg.norm(theta))
+            float(
+                np.linalg.norm(theta)
+            )
         )
 
 
@@ -488,7 +572,8 @@ with mlflow.start_run() as run:
     )
 
     print(
-        f"\nBandit salvo em: {BANDIT_PATH}"
+        f"\nBandit salvo em: "
+        f"{BANDIT_PATH}"
     )
 
 
@@ -502,7 +587,8 @@ with mlflow.start_run() as run:
     )
 
     print(
-        f"Encoder salvo em: {ENCODER_PATH}"
+        f"Encoder salvo em: "
+        f"{ENCODER_PATH}"
     )
 
 
@@ -510,12 +596,20 @@ with mlflow.start_run() as run:
     # 18. REGISTRAR ARTEFATOS NO MLFLOW
     # ========================================================
 
-    mlflow.log_artifact(
-        BANDIT_PATH
+    print(
+        "\nRegistrando artefatos no MLflow..."
     )
 
     mlflow.log_artifact(
-        ENCODER_PATH
+        str(BANDIT_PATH)
+    )
+
+    mlflow.log_artifact(
+        str(ENCODER_PATH)
+    )
+
+    print(
+        "Artefatos registrados."
     )
 
 
@@ -527,10 +621,14 @@ with mlflow.start_run() as run:
     print("TESTE DE INFERÊNCIA")
     print("=" * 70)
 
-    sample_context = X_test_context[0]
+    sample_context = (
+        X_test_context[0]
+    )
 
-    action, score = bandit.select_action(
-        sample_context
+    action, score = (
+        bandit.select_action(
+            sample_context
+        )
     )
 
     print(
@@ -566,7 +664,8 @@ with mlflow.start_run() as run:
     )
 
     print(
-        f"Arms               : {arms}"
+        f"Arms               : "
+        f"{arms}"
     )
 
     print(
@@ -585,6 +684,13 @@ with mlflow.start_run() as run:
     )
 
     print(
+        f"MLflow DB          : "
+        f"{MLFLOW_DB}"
+    )
+
+    print(
         f"MLflow Run ID      : "
         f"{run.info.run_id}"
     )
+
+    print("=" * 70)
