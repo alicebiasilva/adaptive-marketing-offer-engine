@@ -10,10 +10,15 @@ from sklearn.preprocessing import OneHotEncoder
 
 from src.bandit import ContextualThompsonSampling
 
+print("=" * 70)
+print("PROCESSO INICIADO")
+print("=" * 70)
 
 # ============================================================
 # CONFIGURAÇÕES
 # ============================================================
+
+print("Configurando ambiente...")
 
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
@@ -26,7 +31,6 @@ MODEL_DIR = Path("models")
 
 BANDIT_PATH = MODEL_DIR / "bandit.pkl"
 ENCODER_PATH = MODEL_DIR / "encoder.pkl"
-
 
 # ============================================================
 # FEATURES DO CONTEXTO
@@ -71,18 +75,17 @@ CONTEXT_FEATURES = [
 # 1. LEITURA DOS DADOS
 # ============================================================
 
-print("=" * 70)
-print("CARREGANDO DADOS")
-print("=" * 70)
+print("Carregando dados...")
 
 df = pd.read_csv(DATA_PATH)
 
 print(f"Dataset: {df.shape}")
 
-
 # ============================================================
 # 2. VALIDAÇÃO DAS COLUNAS
 # ============================================================
+
+print("Validando entradas...")
 
 required_columns = (
     CONTEXT_FEATURES
@@ -101,6 +104,10 @@ if missing_columns:
         f"{missing_columns}"
     )
 
+print("\n")
+print("=" * 70)
+print("INICIANDO TREINAMENTO!")
+print("=" * 70)
 
 # ============================================================
 # 3. SEPARAÇÃO
