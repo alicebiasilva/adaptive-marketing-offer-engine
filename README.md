@@ -1,5 +1,7 @@
 # Datathon — Plataforma Adaptativa de Ofertas com Contextual Thompson Sampling
 
+* Link paresentação youtube: https://youtu.be/qcrALa0lz0c
+
 ## Sumário
 
 * [1. Visão geral](#1-visão-geral)
