@@ -3,3 +3,16 @@ raw_data = "data/raw"
 processed_data = "data/processed"
 artifacts = "artifacts"
 models = "models"
+
+[paths]
+raw_data = "data/raw/bank-additional-full.csv"
+processed_data = "data/processed/bank_marketing_processed.csv"
+models = "models"
+
+[mlflow]
+tracking_uri = "sqlite:///mlflow/mlflow.db"
+experiment_name = "thompson_sampling"
+
+[model]
+random_state = 42
+test_size = 0.2

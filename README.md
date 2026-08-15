@@ -16,7 +16,6 @@
 * [12. Estrutura do projeto](#12-estrutura-do-projeto)
 * [13. Pipeline do projeto](#13-pipeline-do-projeto)
 * [14. Como executar o projeto](#14-como-executar-o-projeto)
-
   * [14.1. Clonar o repositório](#141-clonar-o-repositório)
   * [14.2. Criar ambiente virtual](#142-criar-ambiente-virtual)
   * [14.3. Instalar dependências](#143-instalar-dependências)
@@ -27,7 +26,6 @@
 * [19. Considerações sobre as features](#19-considerações-sobre-as-features)
 * [20. Limitações](#20-limitações)
 * [21. Produtização da arquitetura em AWS](#21-produtização-da-arquitetura-em-aws)
-
   * [21.1. Objetivo da arquitetura](#211-objetivo-da-arquitetura)
   * [21.2. Arquitetura proposta](#212-arquitetura-proposta)
   * [21.3. Fluxo de dados](#213-fluxo-de-dados)
